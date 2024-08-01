@@ -1,0 +1,31 @@
+
+use crate::tra_structs::{TraEntry, TraComment, EOL, TraFragment};
+
+grammar;
+
+pub WeiduStringLit : String = {
+    <s:r"~[^~]*~"> => s[1..s.len()-1].into(),
+    <s:r#""[^"]*""#> => s[1..s.len()-1].into(),
+};
+
+// Can be negative AFAI Saw
+pub TraId: i64 = "@" <s:r"-?[0-9]+"> => i64::from_str_radix(s, 10).unwrap();
+
+pub TraEntry: TraEntry = {
+    <i: TraId> "=" <v: WeiduStringLit> => TraEntry::base(i, v),
+    <i: TraId> "=" <v1: WeiduStringLit> <v2: WeiduStringLit> => TraEntry::with_alt(i, v1, v2),
+};
+
+pub EOL: EOL = r"\n" => EOL();
+
+pub TraComment: TraComment = {
+    <s:r"//.*"> => TraComment::EndOfLine(s[2..].into()),
+    <s:r"/\*.*\*/"> => TraComment::Enclosed(s[2..s.len() -2].into()),
+};
+
+pub TraFragment: TraFragment = {
+    TraEntry => TraFragment::Entry(<>),
+    TraComment => TraFragment::Comment(<>),
+};
+
+pub TraFile: Vec<TraFragment> = <TraFragment*> => <>;

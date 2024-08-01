@@ -1,0 +1,11 @@
+[package]
+name = "tradiff"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+nu-ansi-term = "0.50.1"
+diff-struct = "0.5.3"
+itertools = "0.13.0"
+tradiff-lib = { path = "../tradiff-lib" }
+termsize = "0.1.9"
