@@ -33,8 +33,13 @@ fn main() {
     let first_counts = first_content.iter().counts_by(|item| item.id);
     let second_counts = second_content.iter().counts_by(|item| item.id);
 
-    let first_dups = first_counts.iter().filter(|(_, count)| **count > 1).collect::<Vec<_>>();
-    let second_dups = second_counts.iter().filter(|(_, count)| **count > 1).collect::<Vec<_>>();
+    let first_dups = first_counts.iter()
+        .filter(|(_, count)| **count > 1)
+        .sorted_by(|(id1, _), (id2, _)| id1.cmp(id2))
+        .collect::<Vec<_>>();
+    let second_dups = second_counts.iter()
+        .filter(|(_, count)| **count > 1)
+        .collect::<Vec<_>>();
 
     let mut found_dups = !first_dups.is_empty() || !second_dups.is_empty();
 
@@ -68,12 +73,12 @@ fn main() {
     if !diff.added.is_empty() {
         println!("{} Entries in the second file but not in the first file:\n  - {}",
                 Color::Green.bold().paint("+"),
-                diff.added.iter().join("\n  - "));
+                diff.added.iter().sorted().join("\n  - "));
     }
     if !diff.removed.is_empty() {
         println!("{} Entries in the first file but not in the second file:\n  - {}",
                 Color::Red.bold().paint("−"),
-                diff.removed.iter().join("\n  - "));
+                diff.removed.iter().sorted().join("\n  - "));
     }
     println!("\n")
 }
