@@ -68,12 +68,12 @@ fn main() {
     if !diff.added.is_empty() {
         println!("{} Entries in the second file but not in the first file:\n  - {}",
                 Color::Green.bold().paint("+"),
-                diff.added.iter().join("\n  -"));
+                diff.added.iter().join("\n  - "));
     }
     if !diff.removed.is_empty() {
         println!("{} Entries in the first file but not in the second file:\n  - {}",
                 Color::Red.bold().paint("−"),
-                diff.removed.iter().join("\n  -"));
+                diff.removed.iter().join("\n  - "));
     }
     println!("\n")
 }
