@@ -1,45 +1,57 @@
-
-use crate::tra_structs::{TraEntry, TraComment, EOL, TraFragment};
+use crate::tra_structs::{TraEntry, TraEntryContent, ExplicitTraEntry, TraComment, TraFragment, WeiduString};
 
 grammar;
 
-pub WeiduStringLit : String = {
+WeiduStringLit : String = {
     <s:r"~[^~]*~"> => s[1..s.len()-1].into(),
     <s:r#""[^"]*""#> => s[1..s.len()-1].into(),
     <s:r"%[^%]*%"> => s[1..s.len()-1].into(),
+};
+
+WeiduString: WeiduString = {
+    WeiduStringLit => WeiduString::Literal(<>),
+    <s1: WeiduString> "^" <s2: WeiduStringLit> => WeiduString::Concat(Box::new(s1), Box::new(s2))
 };
 
 // refer to https://gibberlings3.github.io/iesdp/file_formats/ie_formats/key_v1.htm
 // This is probably limited to 1-byte characters (not taking encoding into account, probably
 // just a binary value) excepting ASCIIZ (used as terminating character).
 // The filename seems to be counted using 2-bytes but I wouldn't count on it being this big.
-pub SoundRef: String = <s:r"\[[^\]]+\]"> => s[1..s.len()-1].into();
+SoundRef: String = <s:r"\[[^\]]+\]"> => s[1..s.len()-1].into();
 
 // Can be negative AFAI Saw
-pub TraId: i64 = "@" <s:r"-?[0-9]+"> => i64::from_str_radix(s, 10).unwrap();
+ TraId: i64 = "@" <s:r"-?[0-9]+"> => i64::from_str_radix(s, 10).unwrap();
+ TlkRef: u32 = "#" <s:r"-?[0-9]+"> => u32::from_str_radix(s, 10).unwrap();
 
-pub GenderSpec: (String, Option<String>) = <value: WeiduStringLit> <sound: SoundRef?>
+ GenderSpec: (WeiduString, Option<String>) = <value: WeiduString> <sound: SoundRef?>
     => (value, sound);
 
-pub TraEntry: TraEntry = {
-    <id: TraId> "=" <male: GenderSpec ><female: GenderSpec?>
-        => TraEntry {
-                id,
-                value: male.0,
-                sound: male.1,
-                alt_value: female.clone().map(|ref female| female.0.to_string()),
-                alt_sound: female.map(|female| female.1).flatten(),
-            }
+TraEntry: TraEntry = {
+    <id: TraId> "=" <male: GenderSpec ><female: GenderSpec?> => TraEntry {
+        id,
+        content: TraEntryContent::Explicit(ExplicitTraEntry {
+            value: male.0,
+            sound: male.1,
+            alt_value: female.clone().map(|ref female| female.0.clone()),
+            alt_sound: female.map(|female| female.1).flatten(),
+        }),
+    },
+    <id: TraId> "=" <other_id: TraId> => TraEntry {
+        id,
+        content: TraEntryContent::At(other_id),
+    },
+    <id: TraId> "=" <tlk_ref: TlkRef> => TraEntry {
+        id,
+        content: TraEntryContent::Tlk(tlk_ref),
+    },
 };
 
-pub EOL: EOL = r"\n" => EOL();
-
-pub TraComment: TraComment = {
+TraComment: TraComment = {
     <s:r"//.*"> => TraComment::EndOfLine(s[2..].into()),
     <s:r"/\*.*\*/"> => TraComment::Enclosed(s[2..s.len() -2].into()),
 };
 
-pub TraFragment: TraFragment = {
+TraFragment: TraFragment = {
     TraEntry => TraFragment::Entry(<>),
     TraComment => TraFragment::Comment(<>),
 };

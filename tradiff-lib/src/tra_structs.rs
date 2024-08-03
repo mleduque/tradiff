@@ -2,9 +2,22 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct TraEntry {
     pub id: i64,
-    pub value: String,
+    pub content: TraEntryContent,
+
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TraEntryContent {
+    Explicit(ExplicitTraEntry),
+    At(i64),
+    Tlk(u32),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExplicitTraEntry {
+    pub value: WeiduString,
     pub sound: Option<String>,
-    pub alt_value: Option<String>,
+    pub alt_value: Option<WeiduString>,
     pub alt_sound: Option<String>,
 }
 
@@ -27,4 +40,12 @@ impl TraFragment {
             TraFragment::Entry(entry) => Some(entry),
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum WeiduString {
+    Literal(String),
+    At(i64),
+    Ref(u32),
+    Concat(Box<WeiduString>, Box<String>),
 }
