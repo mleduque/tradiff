@@ -9,12 +9,27 @@ pub WeiduStringLit : String = {
     <s:r"%[^%]*%"> => s[1..s.len()-1].into(),
 };
 
+// refer to https://gibberlings3.github.io/iesdp/file_formats/ie_formats/key_v1.htm
+// This is probably limited to 1-byte characters (not taking encoding into account, probably
+// just a binary value) excepting ASCIIZ (used as terminating character).
+// The filename seems to be counted using 2-bytes but I wouldn't count on it being this big.
+pub SoundRef: String = <s:r"\[[^\]]+\]"> => s[1..s.len()-1].into();
+
 // Can be negative AFAI Saw
 pub TraId: i64 = "@" <s:r"-?[0-9]+"> => i64::from_str_radix(s, 10).unwrap();
 
+pub GenderSpec: (String, Option<String>) = <value: WeiduStringLit> <sound: SoundRef?>
+    => (value, sound);
+
 pub TraEntry: TraEntry = {
-    <i: TraId> "=" <v: WeiduStringLit> => TraEntry::base(i, v),
-    <i: TraId> "=" <v1: WeiduStringLit> <v2: WeiduStringLit> => TraEntry::with_alt(i, v1, v2),
+    <id: TraId> "=" <male: GenderSpec ><female: GenderSpec?>
+        => TraEntry {
+                id,
+                value: male.0,
+                sound: male.1,
+                alt_value: female.clone().map(|ref female| female.0.to_string()),
+                alt_sound: female.map(|female| female.1).flatten(),
+            }
 };
 
 pub EOL: EOL = r"\n" => EOL();

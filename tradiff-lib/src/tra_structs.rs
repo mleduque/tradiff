@@ -3,18 +3,10 @@
 pub struct TraEntry {
     pub id: i64,
     pub value: String,
+    pub sound: Option<String>,
     pub alt_value: Option<String>,
+    pub alt_sound: Option<String>,
 }
-
-impl TraEntry {
-    pub fn base(id: i64, value: String) -> Self {
-        TraEntry { id, value, alt_value: None }
-    }
-    pub fn with_alt(id: i64, value: String,alt_value: String) -> Self {
-        TraEntry { id, value, alt_value: Some(alt_value) }
-    }
-}
-
 
 pub enum TraComment {
     EndOfLine(String),
