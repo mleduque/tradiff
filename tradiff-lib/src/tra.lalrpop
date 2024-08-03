@@ -6,6 +6,7 @@ grammar;
 pub WeiduStringLit : String = {
     <s:r"~[^~]*~"> => s[1..s.len()-1].into(),
     <s:r#""[^"]*""#> => s[1..s.len()-1].into(),
+    <s:r"%[^%]*%"> => s[1..s.len()-1].into(),
 };
 
 // Can be negative AFAI Saw
