@@ -35,7 +35,7 @@ fn main() -> Result<()>{
     let (first_content, first_errors) = match parse(&first, "first", first_path) {
         Ok(result) => result,
         Err(error) => {
-            bail!("💥 {} The first file ({}) cooul not be parseds\n  - {:?}",
+            bail!("💥 {} The first file ({}) could not be parsed\n  - {:?}",
                     Color::Red.paint("ERROR"), first_path, error);
         }
     };
@@ -44,7 +44,7 @@ fn main() -> Result<()>{
     let (second_content, second_errors) = match parse(&second, "second", second_path) {
         Ok(result) => result,
         Err(error) => {
-            bail!("💥 {} The second file ({}) cooul not be parseds\n  - {:?}",
+            bail!("💥 {} The second file ({}) could not be parsed\n  - {:?}",
                     Color::Red.paint("ERROR"), first_path, error);
         }
     };
