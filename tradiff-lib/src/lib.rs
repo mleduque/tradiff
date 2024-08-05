@@ -1,5 +1,7 @@
 
 mod tra_structs;
+#[cfg(test)]
+mod test;
 
 pub use tra_structs::*;
 

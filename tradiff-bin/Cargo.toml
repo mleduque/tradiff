@@ -4,8 +4,10 @@ version = "1.0.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.86"
 nu-ansi-term = "0.50.1"
 diff-struct = "0.5.3"
 itertools = "0.13.0"
+lalrpop-util = { version = "0.20.2", features = ["lexer", "unicode"] }
 tradiff-lib = { path = "../tradiff-lib" }
 termsize = "0.1.9"

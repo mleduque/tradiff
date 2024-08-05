@@ -1,12 +1,16 @@
 use crate::tra_structs::{TraEntry, TraEntryContent, ExplicitTraEntry, TraComment, TraFragment, WeiduString};
+use lalrpop_util::ErrorRecovery;
 
-grammar;
+grammar<'err>(errors: &'err mut Vec<ErrorRecovery<usize, Token<'input>, &'static str>>);
 
 WeiduStringLit : String = {
     <s:r"~[^~]*~"> => s[1..s.len()-1].into(),
+    FiveTildesString,
     <s:r#""[^"]*""#> => s[1..s.len()-1].into(),
     <s:r"%[^%]*%"> => s[1..s.len()-1].into(),
 };
+
+FiveTildesString: String = <s:r"~~~~~([^~]*~[^~]*|[^~]*~~[^~]*|[^~]*~~~[^~]*|[^~]*~~~~[^~]*)~~~~~"> => s[5..s.len()-5].into();
 
 WeiduString: WeiduString = {
     WeiduStringLit => WeiduString::Literal(<>),
@@ -20,10 +24,10 @@ WeiduString: WeiduString = {
 SoundRef: String = <s:r"\[[^\]]+\]"> => s[1..s.len()-1].into();
 
 // Can be negative AFAI Saw
- TraId: i64 = "@" <s:r"-?[0-9]+"> => i64::from_str_radix(s, 10).unwrap();
- TlkRef: u32 = "#" <s:r"-?[0-9]+"> => u32::from_str_radix(s, 10).unwrap();
+TraId: i64 = "@" <s:r"-?[0-9]+"> => i64::from_str_radix(s, 10).unwrap();
+TlkRef: u32 = "#" <s:r"-?[0-9]+"> => u32::from_str_radix(s, 10).unwrap();
 
- GenderSpec: (WeiduString, Option<String>) = <value: WeiduString> <sound: SoundRef?>
+GenderSpec: (WeiduString, Option<String>) = <value: WeiduString> <sound: SoundRef?>
     => (value, sound);
 
 TraEntry: TraEntry = {
@@ -48,12 +52,13 @@ TraEntry: TraEntry = {
 
 TraComment: TraComment = {
     <s:r"//.*"> => TraComment::EndOfLine(s[2..].into()),
-    <s:r"/\*.*\*/"> => TraComment::Enclosed(s[2..s.len() -2].into()),
+    <s:r"/\*([^\*]*|\*[^/]*)\*/"> => TraComment::Enclosed(s[2..s.len() -2].into()),
 };
 
 TraFragment: TraFragment = {
     TraEntry => TraFragment::Entry(<>),
     TraComment => TraFragment::Comment(<>),
+    ! => { errors.push(<>); TraFragment::Error },
 };
 
 pub TraFile: Vec<TraFragment> = <TraFragment*> => <>;

@@ -1,10 +1,16 @@
+
 use std::collections::HashSet;
 
+use anyhow::{bail, Result};
 use diff::Diff;
 use itertools::Itertools;
+use lalrpop_util::ParseError;
+use line_position::LinePosition;
 use nu_ansi_term::Color;
 use termsize::Size;
 use tradiff_lib::{TraEntry, TraFileParser};
+
+mod line_position;
 
 const USAGE: &'static str = r#"
 Usage:
@@ -15,20 +21,44 @@ Shows differences in entries between two weidu TRA files
 
 const ORANGE: Color = Color::Rgb(255, 165, 0);
 
-fn main() {
+fn main() -> Result<()>{
 
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
         println!("{}", USAGE);
-        return;
+        return Ok(());
     }
     let first_path = &args[1];
     let second_path = &args[2];
     let first = std::fs::read_to_string(first_path).unwrap();
-    let second = std::fs::read_to_string(second_path).unwrap();
 
-    let first_content = parse(&first);
-    let second_content = parse(&second);
+    let (first_content, first_errors) = match parse(&first, "first", first_path) {
+        Ok(result) => result,
+        Err(error) => {
+            bail!("💥 {} The first file ({}) cooul not be parseds\n  - {:?}",
+                    Color::Red.paint("ERROR"), first_path, error);
+        }
+    };
+
+    let second = std::fs::read_to_string(second_path).unwrap();
+    let (second_content, second_errors) = match parse(&second, "second", second_path) {
+        Ok(result) => result,
+        Err(error) => {
+            bail!("💥 {} The second file ({}) cooul not be parseds\n  - {:?}",
+                    Color::Red.paint("ERROR"), first_path, error);
+        }
+    };
+
+    if !first_errors.is_empty() {
+        println!("🚨 {} The first file ({}) contains syntax errors\n  - {}",
+                Color::Red.paint("ERROR"),
+                first_path, first_errors.iter().map(|error| error).join("\n  - "))
+    }
+    if !second_errors.is_empty() {
+        println!("🚨 {} The second file ({}) contains syntax errors\n  - {}",
+        Color::Red.paint("ERROR"),
+                second_path, second_errors.iter().map(|error| error).join("\n  - "))
+    }
 
     let first_counts = first_content.iter().counts_by(|item| item.id);
     let second_counts = second_content.iter().counts_by(|item| item.id);
@@ -80,18 +110,54 @@ fn main() {
                 Color::Red.bold().paint("−"),
                 diff.removed.iter().sorted().join("\n  - "));
     }
-    println!("\n")
+    println!("\n");
+    Ok(())
 }
 
-fn parse(path: &str) -> Vec<TraEntry> {
+fn parse(content: &str, qualifier: &str, path: &str) -> Result<(Vec<TraEntry>, Vec<String>)> {
+    let mut errors = Vec::new();
+
     // only keep entries, sort by id
-    let mut entries = TraFileParser::new()
-        .parse(path)
-        .unwrap()
+    let parsed = match TraFileParser::new().parse(&mut errors, content) {
+        Ok(parsed) => parsed,
+        Err(error) => {
+            let message = process_parse_error(error, content);
+
+            println!("🚨 {} Failed to parse the {qualifier} file ({})\n  {}",
+                        Color::Red.paint("ERROR"), path, message);
+            bail!("Parsing error")
+        }
+    };
+    let mut entries = parsed
         .iter()
         .filter_map(|frag| frag.as_entry())
         .cloned()
         .collect::<Vec<_>>();
     entries.sort_by(|frag1, frag2| frag1.id.cmp(&frag2.id));
-    entries
+
+    let errors = errors.iter().map(|error| format!("{:?}", error)).collect::<Vec<_>>();
+    Ok((entries, errors))
+}
+
+fn process_parse_error<T: std::fmt::Debug>(error: ParseError<usize, T, &str>, source: &str) -> String{
+    match error {
+        ParseError::InvalidToken { location } => {
+            let line_position = LinePosition::from_offset(source, location);
+            format!("Invalid token found at {line_position:?}")
+        },
+        ParseError::UnrecognizedEof { location: _, expected } => {
+            format!("Reached the end of file but there is missing (expected) content\n  expected one of{expected:?}")
+        },
+        ParseError::UnrecognizedToken { token, expected } => {
+            let line_position = LinePosition::from_offset(source, token.0);
+            let token = &token.1;
+            format!("Unrecognized token {token:?} found at {line_position:?}\n  expected one of{expected:?}")
+        },
+        ParseError::ExtraToken { token } => {
+            let line_position = LinePosition::from_offset(source, token.0);
+            let token = &token.1;
+            format!("Extra token {token:?} found at {line_position:?}")
+        },
+        ParseError::User { error } => error.to_string(),
+    }
 }
