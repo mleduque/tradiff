@@ -1,8 +1,12 @@
 
 use std::collections::HashSet;
+use std::fs::read;
 
 use anyhow::{bail, Result};
+use args::Cli;
+use clap::Parser;
 use diff::Diff;
+use encoding_rs::Encoding;
 use itertools::Itertools;
 use lalrpop_util::ParseError;
 use line_position::LinePosition;
@@ -10,28 +14,48 @@ use nu_ansi_term::Color;
 use termsize::Size;
 use tradiff_lib::{TraEntry, TraFileParser};
 
+mod args;
 mod line_position;
-
-const USAGE: &'static str = r#"
-Usage:
-    tradiff <file1> <file2>
-
-Shows differences in entries between two weidu TRA files
-"#;
 
 const ORANGE: Color = Color::Rgb(255, 165, 0);
 
 fn main() -> Result<()>{
 
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() != 3 {
-        println!("{}", USAGE);
-        return Ok(());
-    }
-    let first_path = &args[1];
-    let second_path = &args[2];
-    let first = std::fs::read_to_string(first_path).unwrap();
 
+    let args = Cli::parse();
+
+    let first_path = &args.file1;
+    let second_path = &args.file2;
+
+    let (charset1, charset2) = match (&args.charset, &args.charset1, &args.charset2) {
+        (None, None, None) => (encoding_rs::UTF_8, encoding_rs::UTF_8),
+        (Some(charset), None, None) => {
+            let same = match Encoding::for_label(charset.as_bytes()) {
+                Some(charset) => charset,
+                None => bail!("Invalid charset label {charset}.\nSee https://encoding.spec.whatwg.org/#concept-encoding-get for valid values"),
+            };
+            (same, same)
+        },
+        (None, Some(charset1), Some(charset2)) => {
+            let charset1 = match Encoding::for_label(charset1.as_bytes()) {
+                Some(charset) => charset,
+                None => bail!("Invalid charset label {charset1}.\nSee https://encoding.spec.whatwg.org/#concept-encoding-get for valid values"),
+            };
+            let charset2 = match Encoding::for_label(charset2.as_bytes()) {
+                Some(charset) => charset,
+                None => bail!("Invalid charset label {charset2}.\nSee https://encoding.spec.whatwg.org/#concept-encoding-get for valid values"),
+            };
+            (charset1, charset2)
+        }
+        _ => bail!("Developer error, could not determine charset combination"),
+    };
+
+    let first_bytes = read(first_path).unwrap();
+    let (first, replacements) = charset1.decode_without_bom_handling(&first_bytes);
+    if replacements {
+        println!("🚨 {} The first file ({first_path}) contains characters that could not be handled properly (replaced with �)",
+                ORANGE.paint("WARN"));
+    }
     let first_content = match parse(&first, "first", first_path) {
         Ok(result) => result,
         Err(error) => {
@@ -40,7 +64,12 @@ fn main() -> Result<()>{
         }
     };
 
-    let second = std::fs::read_to_string(second_path).unwrap();
+    let second_bytes = read(second_path).unwrap();
+    let (second, replacements) = charset2.decode_without_bom_handling(&second_bytes);
+    if replacements {
+        println!("🚨 {} The second file ({second_path}) contains characters that could not be handled properly (replaced with �)",
+                ORANGE.paint("WARN"));
+    }
     let second_content = match parse(&second, "second", second_path) {
         Ok(result) => result,
         Err(error) => {

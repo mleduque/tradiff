@@ -5,6 +5,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+clap = "4.5.13"
+clap_derive = "4.5.13"
+encoding_rs = "0.8.34"
 nu-ansi-term = "0.50.1"
 diff-struct = "0.5.3"
 itertools = "0.13.0"

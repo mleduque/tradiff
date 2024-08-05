@@ -53,4 +53,3 @@ I didn't test what happens if you put multiple entries on a single line in weidu
 - You can't put comments inside an entry (before or after `=` or one of the srtins or sound references)
 - "five tildes" delimiter is under-specified in weidu and I know there are difference in result when you
   add yet more tildes
-- Works only on YTF-8 encoded files
