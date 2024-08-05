@@ -32,7 +32,7 @@ fn main() -> Result<()>{
     let second_path = &args[2];
     let first = std::fs::read_to_string(first_path).unwrap();
 
-    let (first_content, first_errors) = match parse(&first, "first", first_path) {
+    let first_content = match parse(&first, "first", first_path) {
         Ok(result) => result,
         Err(error) => {
             bail!("💥 {} The first file ({}) could not be parsed\n  - {:?}",
@@ -41,24 +41,13 @@ fn main() -> Result<()>{
     };
 
     let second = std::fs::read_to_string(second_path).unwrap();
-    let (second_content, second_errors) = match parse(&second, "second", second_path) {
+    let second_content = match parse(&second, "second", second_path) {
         Ok(result) => result,
         Err(error) => {
             bail!("💥 {} The second file ({}) could not be parsed\n  - {:?}",
                     Color::Red.paint("ERROR"), first_path, error);
         }
     };
-
-    if !first_errors.is_empty() {
-        println!("🚨 {} The first file ({}) contains syntax errors\n  - {}",
-                Color::Red.paint("ERROR"),
-                first_path, first_errors.iter().map(|error| error).join("\n  - "))
-    }
-    if !second_errors.is_empty() {
-        println!("🚨 {} The second file ({}) contains syntax errors\n  - {}",
-        Color::Red.paint("ERROR"),
-                second_path, second_errors.iter().map(|error| error).join("\n  - "))
-    }
 
     let first_counts = first_content.iter().counts_by(|item| item.id);
     let second_counts = second_content.iter().counts_by(|item| item.id);
@@ -114,13 +103,13 @@ fn main() -> Result<()>{
     Ok(())
 }
 
-fn parse(content: &str, qualifier: &str, path: &str) -> Result<(Vec<TraEntry>, Vec<String>)> {
+fn parse(content: &str, qualifier: &str, path: &str) -> Result<Vec<TraEntry>> {
     let mut errors = Vec::new();
 
     // only keep entries, sort by id
     let parsed = match TraFileParser::new().parse(&mut errors, content) {
         Ok(parsed) => parsed,
-        Err(error) => {
+        Err(ref error) => {
             let message = process_parse_error(error, content);
 
             println!("🚨 {} Failed to parse the {qualifier} file ({})\n  {}",
@@ -135,14 +124,21 @@ fn parse(content: &str, qualifier: &str, path: &str) -> Result<(Vec<TraEntry>, V
         .collect::<Vec<_>>();
     entries.sort_by(|frag1, frag2| frag1.id.cmp(&frag2.id));
 
-    let errors = errors.iter().map(|error| format!("{:?}", error)).collect::<Vec<_>>();
-    Ok((entries, errors))
+
+    if !errors.is_empty() {
+        println!("🚨 {} The {qualifier} file ({}) contains syntax errors\n  - {}",
+                Color::Red.paint("ERROR"), path, errors.iter().map(|error|
+                    process_parse_error(&error.error, content)
+                ).join("\n  - "))
+    }
+
+    Ok(entries)
 }
 
-fn process_parse_error<T: std::fmt::Debug>(error: ParseError<usize, T, &str>, source: &str) -> String{
+fn process_parse_error<T: std::fmt::Debug>(error: &ParseError<usize, T, &str>, source: &str) -> String{
     match error {
         ParseError::InvalidToken { location } => {
-            let line_position = LinePosition::from_offset(source, location);
+            let line_position = LinePosition::from_offset(source, *location);
             format!("Invalid token found at {line_position:?}")
         },
         ParseError::UnrecognizedEof { location: _, expected } => {
