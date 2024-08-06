@@ -24,31 +24,32 @@ pub struct ExplicitTraEntry {
 // Only used to build test expected values
 #[cfg(test)]
 impl ExplicitTraEntry {
-    pub fn simplest(value: &str) -> Self {
-        ExplicitTraEntry { value: WeiduString::Literal(value.to_string()), ..Default::default() }
+    pub fn simplest(value: WeiduStringLit) -> Self {
+        ExplicitTraEntry { value: WeiduString::Literal(value), ..Default::default() }
     }
 
-    pub fn with_female(value: &str, alt_value: &str) -> Self {
+    pub fn with_female(value: WeiduStringLit, alt_value: WeiduStringLit) -> Self {
         ExplicitTraEntry {
-            value: WeiduString::Literal(value.to_string()),
-            alt_value: Some(WeiduString::Literal(alt_value.to_string())),
+            value: WeiduString::Literal(value),
+            alt_value: Some(WeiduString::Literal(alt_value)),
             ..Default::default()
         }
     }
 
-    pub fn with_sound(value: &str, sound: &str) -> Self {
+    pub fn with_sound(value: WeiduStringLit, sound: &str) -> Self {
         ExplicitTraEntry {
-            value: WeiduString::Literal(value.to_string()),
+            value: WeiduString::Literal(value),
             sound: Some(sound.to_string()),
             ..Default::default()
         }
     }
 
-    pub fn new(value: &str, sound: Option<&str>, alt_value: Option<&str>, alt_sound: Option<&str>) -> Self {
+    pub fn new(value: WeiduStringLit, sound: Option<&str>, 
+            alt_value: Option<WeiduStringLit>, alt_sound: Option<&str>) -> Self {
         ExplicitTraEntry {
-            value: WeiduString::Literal(value.to_string()),
+            value: WeiduString::Literal(value),
             sound: sound.map(|s| s.to_string()),
-            alt_value: alt_value.map(|s| WeiduString::Literal(s.to_string())),
+            alt_value: alt_value.map(|s| WeiduString::Literal(s)),
             alt_sound: alt_sound.map(|s|s.to_string()),
         }
     }
@@ -60,18 +61,25 @@ pub enum TraComment {
     Enclosed(String),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum WeiduStringLit {
+    Tilde(String),
+    DoubleQuote(String),
+    Percent(String),
+    FiveTildes(String),
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WeiduString {
-    Literal(String),
+    Literal(WeiduStringLit),
     At(i64),
     Ref(u32),
-    Concat(Box<WeiduString>, Box<String>),
+    Concat(Box<WeiduString>, Box<WeiduStringLit>),
 }
 
 impl Default for WeiduString {
     fn default() -> Self {
-        Self::Literal("".to_string())
+        Self::Literal(WeiduStringLit::Tilde("".to_string()))
     }
 }
 
@@ -89,4 +97,32 @@ impl TraFragment {
             _ => None,
         }
     }
+}
+
+#[macro_export]
+macro_rules! tilde {
+    ($expression:expr) => {
+        WeiduStringLit::Tilde($expression.into())
+    };
+}
+
+#[macro_export]
+macro_rules! dquote {
+    ($expression:expr) => {
+        WeiduStringLit::DoubleQuote($expression.into())
+    };
+}
+
+#[macro_export]
+macro_rules! percent {
+    ($expression:expr) => {
+        WeiduStringLit::Percent($expression.into())
+    };
+}
+
+#[macro_export]
+macro_rules! ftildes {
+    ($expression:expr) => {
+        WeiduStringLit::FiveTildes($expression.into())
+    };
 }

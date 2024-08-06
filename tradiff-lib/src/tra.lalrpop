@@ -1,16 +1,15 @@
-use crate::tra_structs::{TraEntry, TraEntryContent, ExplicitTraEntry, TraComment, TraFragment, WeiduString};
-use lalrpop_util::ErrorRecovery;
+use crate::tra_structs::{ExplicitTraEntry, TraComment, TraEntry, TraEntryContent, TraFragment, WeiduString, WeiduStringLit};
+use lalrpop_util::{ErrorRecovery};
 
 grammar<'err>(errors: &'err mut Vec<ErrorRecovery<usize, Token<'input>, &'static str>>);
 
-WeiduStringLit : String = {
-    <s:r"~[^~]*~"> => s[1..s.len()-1].into(),
-    FiveTildesString,
-    <s:r#""[^"]*""#> => s[1..s.len()-1].into(),
-    <s:r"%[^%]*%"> => s[1..s.len()-1].into(),
+WeiduStringLit : WeiduStringLit = {
+    <s:r"~[^~]*~"> => WeiduStringLit::Tilde(s[1..s.len()-1].to_string()),
+    <s:r#""[^"]*""#> => WeiduStringLit::DoubleQuote(s[1..s.len()-1].to_string()),
+    <s:r"%[^%]*%"> => WeiduStringLit::Percent(s[1..s.len()-1].to_string()),
+    <s:r"~~~~~([^~]*|[^~]*~[^~]*|[^~]*~~[^~]*|[^~]*~~~[^~]*|[^~]*~~~~[^~]*)~~~~~">
+                                => WeiduStringLit::FiveTildes(s[5..s.len()-5].to_string()),
 };
-
-FiveTildesString: String = <s:r"~~~~~([^~]*~[^~]*|[^~]*~~[^~]*|[^~]*~~~[^~]*|[^~]*~~~~[^~]*)~~~~~"> => s[5..s.len()-5].into();
 
 WeiduString: WeiduString = {
     WeiduStringLit => WeiduString::Literal(<>),

@@ -1,6 +1,7 @@
-use crate::{ExplicitTraEntry, TraComment, TraEntry, TraFileParser, TraFragment};
 
+use pretty_assertions::assert_eq;
 
+use crate::{dquote, ftildes, percent, tilde, ExplicitTraEntry, TraComment, TraEntry, TraFileParser, TraFragment, WeiduStringLit};
 use crate::TraEntryContent::Explicit;
 
 #[test]
@@ -17,10 +18,10 @@ fn multiple_string_variants() {
     assert_eq!(
         TraFileParser::new().parse(&mut errors, &input),
         Ok(vec![
-            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest("aaa"))}),
-            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest("bbb"))}),
-            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::simplest("ccc"))}),
-            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::simplest("abc~~abc"))}),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
+            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::simplest(percent!("ccc")))}),
+            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::simplest(ftildes!("abc~~abc")))}),
         ])
     )
 }
@@ -36,10 +37,10 @@ fn multiple_entries_on_single_line() {
     assert_eq!(
         TraFileParser::new().parse(&mut errors, &input),
         Ok(vec![
-            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest("aaa"))}),
-            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest("bbb"))}),
-            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::simplest("ccc"))}),
-            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::simplest("abc~~abc"))}),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
+            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::simplest(percent!("ccc")))}),
+            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::simplest(ftildes!("abc~~abc")))}),
         ])
     )
 }
@@ -60,9 +61,9 @@ fn with_enclosed_comments_between_entries() {
         TraFileParser::new().parse(&mut errors, &input),
         Ok(vec![
             TraFragment::Comment(TraComment::Enclosed(" comment 1 ".to_string())),
-            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest("aaa"))}),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
             TraFragment::Comment(TraComment::Enclosed(" comment 2 ".to_string())),
-            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest("bbb"))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
             TraFragment::Comment(TraComment::Enclosed(" comment 3 ".to_string())),
         ])
     )
@@ -83,9 +84,9 @@ fn with_end_of_line_comments() {
         TraFileParser::new().parse(&mut errors, &input),
         Ok(vec![
             TraFragment::Comment(TraComment::EndOfLine(" comment 1".to_string())),
-            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest("aaa"))}),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
             TraFragment::Comment(TraComment::EndOfLine(" comment 2".to_string())),
-            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest("bbb"))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
             TraFragment::Comment(TraComment::EndOfLine(" comment 3".to_string())),
             TraFragment::Comment(TraComment::EndOfLine(" comment 4".to_string())),
         ])
@@ -107,9 +108,9 @@ fn with_multiline_enclosed_comment() {
     assert_eq!(
         TraFileParser::new().parse(&mut errors, &input),
         Ok(vec![
-            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest("aaa"))}),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
             TraFragment::Comment(TraComment::Enclosed("\n    comment 2\n    ".to_string())),
-            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest("bbb"))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
         ])
     )
 }
@@ -143,10 +144,10 @@ fn with_female_variant() {
     assert_eq!(
         TraFileParser::new().parse(&mut errors, &input),
         Ok(vec![
-            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::with_female("aaa", "aab"))}),
-            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::with_female("bbb", "bbc"))}),
-            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::with_female("ccc", "ccd"))}),
-            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::with_female("abc~~abc", "bca~~bca"))}),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::with_female(tilde!("aaa"), tilde!("aab")))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::with_female(dquote!("bbb"), dquote!("bbc")))}),
+            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::with_female(percent!("ccc"), percent!("ccd")))}),
+            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::with_female(ftildes!("abc~~abc"), ftildes!("bca~~bca")))}),
         ])
     )
 }
@@ -165,10 +166,10 @@ fn with_male_sound() {
     assert_eq!(
         TraFileParser::new().parse(&mut errors, &input),
         Ok(vec![
-            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::with_sound("aaa", "ASOUND"))}),
-            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::with_sound("bbb", "BSOUND"))}),
-            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::with_sound("ccc", "CSOUND"))}),
-            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::with_sound("abc~~abc", "DSOUND"))}),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::with_sound(tilde!("aaa"), "ASOUND"))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::with_sound(dquote!("bbb"), "BSOUND"))}),
+            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::with_sound(percent!("ccc"), "CSOUND"))}),
+            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::with_sound(ftildes!("abc~~abc"), "DSOUND"))}),
         ])
     )
 }
@@ -189,19 +190,19 @@ fn with_male_sound_and_female_variant() {
         Ok(vec![
             TraFragment::Entry(TraEntry {
                 id: 1,
-                content: Explicit(ExplicitTraEntry::new("aaa", Some("ASOUND"), Some("aab"), None))
+                content: Explicit(ExplicitTraEntry::new(tilde!("aaa"), Some("ASOUND"), Some(tilde!("aab")), None))
             }),
             TraFragment::Entry(TraEntry {
                 id: 2,
-                content: Explicit(ExplicitTraEntry::new("bbb", Some("BSOUND"), Some("bbc"), None))
+                content: Explicit(ExplicitTraEntry::new(dquote!("bbb"), Some("BSOUND"), Some(dquote!("bbc")), None))
             }),
             TraFragment::Entry(TraEntry {
                 id: 3,
-                content: Explicit(ExplicitTraEntry::new("ccc", Some("CSOUND"), Some("ccd"), None))
+                content: Explicit(ExplicitTraEntry::new(percent!("ccc"), Some("CSOUND"), Some(percent!("ccd")), None))
             }),
             TraFragment::Entry(TraEntry {
                 id: 4,
-                content: Explicit(ExplicitTraEntry::new("abc~~abc", Some("DSOUND"), Some("bca~~bca"), None))
+                content: Explicit(ExplicitTraEntry::new(ftildes!("abc~~abc"), Some("DSOUND"), Some(ftildes!("bca~~bca")), None))
             }),
         ])
     )
@@ -223,19 +224,19 @@ fn with_all_elements_in_tra_entry() {
         Ok(vec![
             TraFragment::Entry(TraEntry {
                 id: 1,
-                content: Explicit(ExplicitTraEntry::new("aaa", Some("ASOUND"), Some("aab"), Some("FASOUND")))
+                content: Explicit(ExplicitTraEntry::new(tilde!("aaa"), Some("ASOUND"), Some(tilde!("aab")), Some("FASOUND")))
             }),
             TraFragment::Entry(TraEntry {
                 id: 2,
-                content: Explicit(ExplicitTraEntry::new("bbb", Some("BSOUND"), Some("bbc"), Some("FBSOUND")))
+                content: Explicit(ExplicitTraEntry::new(dquote!("bbb"), Some("BSOUND"), Some(dquote!("bbc")), Some("FBSOUND")))
             }),
             TraFragment::Entry(TraEntry {
                 id: 3,
-                content: Explicit(ExplicitTraEntry::new("ccc", Some("CSOUND"), Some("ccd"), Some("FCSOUND")))
+                content: Explicit(ExplicitTraEntry::new(percent!("ccc"), Some("CSOUND"), Some(percent!("ccd")), Some("FCSOUND")))
             }),
             TraFragment::Entry(TraEntry {
                 id: 4,
-                content: Explicit(ExplicitTraEntry::new("abc~~abc", Some("DSOUND"), Some("bca~~bca"), Some("FDSOUND")))
+                content: Explicit(ExplicitTraEntry::new(ftildes!("abc~~abc"), Some("DSOUND"), Some(ftildes!("bca~~bca")), Some("FDSOUND")))
             }),
         ])
     )
@@ -257,22 +258,23 @@ fn with_all_elements_in_tra_entry_and_eol_comment() {
         Ok(vec![
             TraFragment::Entry(TraEntry {
                 id: 1,
-                content: Explicit(ExplicitTraEntry::new("aaa", Some("ASOUND"), Some("aab"), Some("FASOUND")))
+                content: Explicit(ExplicitTraEntry::new(tilde!("aaa"), Some("ASOUND"),
+                                                        Some(tilde!("aab")), Some("FASOUND")))
             }),
             TraFragment::Comment(TraComment::EndOfLine(" comment 1".to_string())),
             TraFragment::Entry(TraEntry {
                 id: 2,
-                content: Explicit(ExplicitTraEntry::new("bbb", Some("BSOUND"), Some("bbc"), Some("FBSOUND")))
+                content: Explicit(ExplicitTraEntry::new(dquote!("bbb"), Some("BSOUND"), Some(dquote!("bbc")), Some("FBSOUND")))
             }),
             TraFragment::Comment(TraComment::EndOfLine(" comment 2".to_string())),
             TraFragment::Entry(TraEntry {
                 id: 3,
-                content: Explicit(ExplicitTraEntry::new("ccc", Some("CSOUND"), Some("ccd"), Some("FCSOUND")))
+                content: Explicit(ExplicitTraEntry::new(percent!("ccc"), Some("CSOUND"), Some(percent!("ccd")), Some("FCSOUND")))
             }),
             TraFragment::Comment(TraComment::EndOfLine(" comment 3".to_string())),
             TraFragment::Entry(TraEntry {
                 id: 4,
-                content: Explicit(ExplicitTraEntry::new("abc~~abc", Some("DSOUND"), Some("bca~~bca"), Some("FDSOUND")))
+                content: Explicit(ExplicitTraEntry::new(ftildes!("abc~~abc"), Some("DSOUND"), Some(ftildes!("bca~~bca")), Some("FDSOUND")))
             }),
             TraFragment::Comment(TraComment::EndOfLine(" comment 4".to_string())),
         ])
