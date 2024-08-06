@@ -93,6 +93,25 @@ fn with_end_of_line_comments() {
     )
 }
 
+
+#[test]
+fn with_end_of_line_comments_crlf() {
+    let input = "// comment 1".to_string() + "\n" + "@1 = ~aaa~ // comment 2" + "\r\n" +r#"@2 = "bbb"// comment 3"# + "\n";
+
+    let mut errors = Vec::new();
+
+    assert_eq!(
+        TraFileParser::new().parse(&mut errors, &input),
+        Ok(vec![
+            TraFragment::Comment(TraComment::EndOfLine(" comment 1".to_string())),
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
+            TraFragment::Comment(TraComment::EndOfLine(" comment 2".to_string())),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
+            TraFragment::Comment(TraComment::EndOfLine(" comment 3".to_string())),
+        ])
+    )
+}
+
 #[test]
 fn with_multiline_enclosed_comment() {
     let input = r#"
@@ -277,6 +296,24 @@ fn with_all_elements_in_tra_entry_and_eol_comment() {
                 content: Explicit(ExplicitTraEntry::new(ftildes!("abc~~abc"), Some("DSOUND"), Some(ftildes!("bca~~bca")), Some("FDSOUND")))
             }),
             TraFragment::Comment(TraComment::EndOfLine(" comment 4".to_string())),
+        ])
+    )
+}
+
+#[test]
+fn five_tildes_strings() {
+    let input = r#"
+@1 =  ~~~~~~~~~~@2 = ~~~~~ ~~~~~@3 = ~ ~~~~~~~~~@4 = ~~~~~~~~~~~~"#;
+
+    let mut errors = Vec::new();
+
+    assert_eq!(
+        TraFileParser::new().parse(&mut errors, &input),
+        Ok(vec![
+            TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(ftildes!("")))}),
+            TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(ftildes!(" ")))}),
+            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::simplest(ftildes!("")))}),
+            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::with_female(ftildes!(""), tilde!("")))}),
         ])
     )
 }

@@ -50,8 +50,9 @@ TraEntry: TraEntry = {
 };
 
 TraComment: TraComment = {
-    <s:r"//.*"> => TraComment::EndOfLine(s[2..].into()),
-    <s:r"/\*([^\*]*|\*[^/]*)\*/"> => TraComment::Enclosed(s[2..s.len() -2].into()),
+    <s:r"//[^\n]*\r\n"> => TraComment::EndOfLine(s[2..s.len() - 2].into()),
+    <s:r"//[^\n]*[^\r]\n"> => TraComment::EndOfLine(s[2..s.len() - 1].into()),
+    <s:r"/\*([^\*]*|\*[^/]*)\*/"> => TraComment::Enclosed(s[2..s.len() - 2].into()),
 };
 
 TraFragment: TraFragment = {
