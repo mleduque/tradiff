@@ -1,36 +1,47 @@
 use crate::tra_structs::{ExplicitTraEntry, TraComment, TraEntry, TraEntryContent, TraFragment, WeiduString, WeiduStringLit};
 use lalrpop_util::{ErrorRecovery};
+use crate::token::{Token, LexError};
 
-grammar<'err>(errors: &'err mut Vec<ErrorRecovery<usize, Token<'input>, &'static str>>);
+
+grammar<'err>(errors: &'err mut Vec<ErrorRecovery<usize, Token, LexError>>);
+
+extern {
+    type Location = usize;
+    type Error = LexError;
+
+    enum Token {
+        "id" => Token::Id(<i64>),
+        "equal" => Token::Equal,
+        "concat" => Token::OperatorConcat,
+        "ftildes" => Token::FiveTildesString(<String>),
+        "tilde" => Token::TildeString(<String>),
+        "dquote" => Token::DoubleQuoteString(<String>),
+        "percent" => Token::PercentString(<String>),
+        "eol_cmtcrlf" => Token::EndOfLineCommentCrlf(<String>),
+        "eol_cmt" => Token::EndOfLineComment(<String>),
+        "encl_cmt" => Token::EnclosedComment(<String>),
+        "soundref" => Token::SoundRef(<String>),
+        "tlkref" => Token::TlkRef(<u64>),
+    }
+}
 
 WeiduStringLit : WeiduStringLit = {
-    <s:r"~[^~]*~"> => WeiduStringLit::Tilde(s[1..s.len()-1].to_string()),
-    <s:r#""[^"]*""#> => WeiduStringLit::DoubleQuote(s[1..s.len()-1].to_string()),
-    <s:r"%[^%]*%"> => WeiduStringLit::Percent(s[1..s.len()-1].to_string()),
-    <s:r"~~~~~([^~]*|[^~]*~[^~]*|[^~]*~~[^~]*|[^~]*~~~[^~]*|[^~]*~~~~[^~]*)~~~~~">
-                                => WeiduStringLit::FiveTildes(s[5..s.len()-5].to_string()),
+    "tilde" => WeiduStringLit::Tilde(<>),
+    "dquote" => WeiduStringLit::DoubleQuote(<>),
+    "percent" => WeiduStringLit::Percent(<>),
+    "ftildes" => WeiduStringLit::FiveTildes(<>),
 };
 
 WeiduString: WeiduString = {
     WeiduStringLit => WeiduString::Literal(<>),
-    <s1: WeiduString> "^" <s2: WeiduStringLit> => WeiduString::Concat(Box::new(s1), Box::new(s2))
+    <s1: WeiduString> "concat" <s2: WeiduStringLit> => WeiduString::Concat(Box::new(s1), Box::new(s2))
 };
 
-// refer to https://gibberlings3.github.io/iesdp/file_formats/ie_formats/key_v1.htm
-// This is probably limited to 1-byte characters (not taking encoding into account, probably
-// just a binary value) excepting ASCIIZ (used as terminating character).
-// The filename seems to be counted using 2-bytes but I wouldn't count on it being this big.
-SoundRef: String = <s:r"\[[^\]]+\]"> => s[1..s.len()-1].into();
-
-// Can be negative AFAI Saw
-TraId: i64 = "@" <s:r"-?[0-9]+"> => i64::from_str_radix(s, 10).unwrap();
-TlkRef: u32 = "#" <s:r"-?[0-9]+"> => u32::from_str_radix(s, 10).unwrap();
-
-GenderSpec: (WeiduString, Option<String>) = <value: WeiduString> <sound: SoundRef?>
-    => (value, sound);
+GenderSpec: (WeiduString, Option<String>) =
+    <value: WeiduString> <sound: "soundref"?> => (value, sound);
 
 TraEntry: TraEntry = {
-    <id: TraId> "=" <male: GenderSpec ><female: GenderSpec?> => TraEntry {
+    <id:"id"> "equal" <male: GenderSpec ><female: GenderSpec?> => TraEntry {
         id,
         content: TraEntryContent::Explicit(ExplicitTraEntry {
             value: male.0,
@@ -39,26 +50,29 @@ TraEntry: TraEntry = {
             alt_sound: female.map(|female| female.1).flatten(),
         }),
     },
-    <id: TraId> "=" <other_id: TraId> => TraEntry {
+    <id:"id"> "equal" <other: "id"> => TraEntry {
         id,
-        content: TraEntryContent::At(other_id),
+        content: TraEntryContent::At(other),
     },
-    <id: TraId> "=" <tlk_ref: TlkRef> => TraEntry {
+    <id:"id"> "equal" <tlkref: "tlkref"> => TraEntry {
         id,
-        content: TraEntryContent::Tlk(tlk_ref),
+        content: TraEntryContent::Tlk(tlkref),
     },
 };
 
 TraComment: TraComment = {
-    <s:r"//[^\n]*\r\n"> => TraComment::EndOfLine(s[2..s.len() - 2].into()),
-    <s:r"//[^\n]*[^\r]\n"> => TraComment::EndOfLine(s[2..s.len() - 1].into()),
-    <s:r"/\*([^\*]*|\*[^/]*)\*/"> => TraComment::Enclosed(s[2..s.len() - 2].into()),
+    "eol_cmtcrlf" => TraComment::EndOfLine(<>),
+    "eol_cmt" => TraComment::EndOfLine(<>),
+    "encl_cmt" => TraComment::Enclosed(<>),
 };
 
 TraFragment: TraFragment = {
     TraEntry => TraFragment::Entry(<>),
     TraComment => TraFragment::Comment(<>),
-    ! => { errors.push(<>); TraFragment::Error },
+    <e:!> => {
+        errors.push(e);
+        TraFragment::Error
+    },
 };
 
 pub TraFile: Vec<TraFragment> = <TraFragment*> => <>;

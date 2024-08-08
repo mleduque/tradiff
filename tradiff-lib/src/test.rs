@@ -1,7 +1,8 @@
 
 use pretty_assertions::assert_eq;
 
-use crate::{dquote, ftildes, percent, tilde, ExplicitTraEntry, TraComment, TraEntry, TraFileParser, TraFragment, WeiduStringLit};
+use crate::parsers::parse_trafile;
+use crate::{dquote, ftildes, percent, tilde, ExplicitTraEntry, TraComment, TraEntry, TraFragment, WeiduStringLit};
 use crate::TraEntryContent::Explicit;
 
 #[test]
@@ -16,7 +17,7 @@ fn multiple_string_variants() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
             TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
@@ -35,7 +36,7 @@ fn multiple_entries_on_single_line() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
             TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(dquote!("bbb")))}),
@@ -58,7 +59,7 @@ fn with_enclosed_comments_between_entries() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Comment(TraComment::Enclosed(" comment 1 ".to_string())),
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
@@ -81,7 +82,7 @@ fn with_end_of_line_comments() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Comment(TraComment::EndOfLine(" comment 1".to_string())),
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
@@ -101,7 +102,7 @@ fn with_end_of_line_comments_crlf() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Comment(TraComment::EndOfLine(" comment 1".to_string())),
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
@@ -125,7 +126,7 @@ fn with_multiline_enclosed_comment() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(tilde!("aaa")))}),
             TraFragment::Comment(TraComment::Enclosed("\n    comment 2\n    ".to_string())),
@@ -145,7 +146,7 @@ fn with_en_of_line_comment_and_junk_on_the_next_line() {
 
     let mut errors = Vec::new();
 
-    assert!(TraFileParser::new().parse(&mut errors, &input).is_err())
+    assert!(parse_trafile(&mut errors, &input).is_err());
 }
 
 
@@ -161,7 +162,7 @@ fn with_female_variant() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::with_female(tilde!("aaa"), tilde!("aab")))}),
             TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::with_female(dquote!("bbb"), dquote!("bbc")))}),
@@ -183,7 +184,7 @@ fn with_male_sound() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::with_sound(tilde!("aaa"), "ASOUND"))}),
             TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::with_sound(dquote!("bbb"), "BSOUND"))}),
@@ -205,7 +206,7 @@ fn with_male_sound_and_female_variant() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry {
                 id: 1,
@@ -239,7 +240,7 @@ fn with_all_elements_in_tra_entry() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry {
                 id: 1,
@@ -273,7 +274,7 @@ fn with_all_elements_in_tra_entry_and_eol_comment() {
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry {
                 id: 1,
@@ -303,17 +304,17 @@ fn with_all_elements_in_tra_entry_and_eol_comment() {
 #[test]
 fn five_tildes_strings() {
     let input = r#"
-@1 =  ~~~~~~~~~~@2 = ~~~~~ ~~~~~@3 = ~ ~~~~~~~~~@4 = ~~~~~~~~~~~~"#;
+@1 =  ~~~~~~~~~~ @2 = ~~~~~ ~~~~~@3 = ~ ~~~~~~~~~"#;
 
     let mut errors = Vec::new();
 
     assert_eq!(
-        TraFileParser::new().parse(&mut errors, &input),
+        parse_trafile(&mut errors, &input),
         Ok(vec![
             TraFragment::Entry(TraEntry { id: 1, content: Explicit(ExplicitTraEntry::simplest(ftildes!("")))}),
             TraFragment::Entry(TraEntry { id: 2, content: Explicit(ExplicitTraEntry::simplest(ftildes!(" ")))}),
-            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::simplest(ftildes!("")))}),
-            TraFragment::Entry(TraEntry { id: 4, content: Explicit(ExplicitTraEntry::with_female(ftildes!(""), tilde!("")))}),
+            TraFragment::Entry(TraEntry { id: 3, content: Explicit(ExplicitTraEntry::with_female(tilde!(" "),tilde!("")))}),
+            TraFragment::Error
         ])
     )
 }

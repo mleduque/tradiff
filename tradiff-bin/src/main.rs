@@ -12,7 +12,7 @@ use lalrpop_util::ParseError;
 use line_position::LinePosition;
 use nu_ansi_term::Color;
 use termsize::Size;
-use tradiff_lib::{TraEntry, TraFileParser};
+use tradiff_lib::{parse_trafile, LexError, Token, TraEntry};
 
 mod args;
 mod line_position;
@@ -136,7 +136,7 @@ fn parse(content: &str, qualifier: &str, path: &str) -> Result<Vec<TraEntry>> {
     let mut errors = Vec::new();
 
     // only keep entries, sort by id
-    let parsed = match TraFileParser::new().parse(&mut errors, content) {
+    let parsed = match parse_trafile(&mut errors, content) {
         Ok(parsed) => parsed,
         Err(ref error) => {
             let message = process_parse_error(error, content);
@@ -164,7 +164,7 @@ fn parse(content: &str, qualifier: &str, path: &str) -> Result<Vec<TraEntry>> {
     Ok(entries)
 }
 
-fn process_parse_error<T: std::fmt::Debug>(error: &ParseError<usize, T, &str>, source: &str) -> String{
+fn process_parse_error(error: &ParseError<usize, Token, LexError>, source: &str) -> String{
     match error {
         ParseError::InvalidToken { location } => {
             let line_position = LinePosition::from_offset(source, *location);
@@ -183,6 +183,6 @@ fn process_parse_error<T: std::fmt::Debug>(error: &ParseError<usize, T, &str>, s
             let token = &token.1;
             format!("Extra token {token:?} found at {line_position:?}")
         },
-        ParseError::User { error } => error.to_string(),
+        ParseError::User { error } => format!("{error:?}"),
     }
 }

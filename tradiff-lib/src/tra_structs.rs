@@ -10,7 +10,7 @@ pub struct TraEntry {
 pub enum TraEntryContent {
     Explicit(ExplicitTraEntry),
     At(i64),
-    Tlk(u32),
+    Tlk(u64),
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
