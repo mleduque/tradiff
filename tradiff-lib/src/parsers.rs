@@ -10,7 +10,8 @@ pub fn parse_trafile<'a>(
     content: &'a str,
 ) -> Result<Vec<TraFragment>, ParseError<usize, Token, LexError>> {
     let mut gather_errors = Vec::new();
-    let lexer = Lexer::new(content);
+    let normalized = content.replace("\r\n", "\n");
+    let lexer = Lexer::new(&normalized);
     let result = TraFileParser::new().parse(&mut gather_errors, lexer);
     errors.extend(gather_errors);
     result

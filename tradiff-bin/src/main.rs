@@ -164,7 +164,7 @@ fn parse(content: &str, qualifier: &str, path: &str) -> Result<Vec<TraEntry>> {
     Ok(entries)
 }
 
-fn process_parse_error(error: &ParseError<usize, Token, LexError>, source: &str) -> String{
+fn process_parse_error(error: &ParseError<usize, Token, LexError>, source: &str) -> String {
     match error {
         ParseError::InvalidToken { location } => {
             let line_position = LinePosition::from_offset(source, *location);

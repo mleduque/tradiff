@@ -49,11 +49,9 @@ pub enum Token {
     #[regex(r"%[^%]*%", |lex| { let s = &lex.slice(); s[1..s.len()-1].to_string() })]
     PercentString(String),
 
-    #[regex("//[^\n]*\r\n", |lex| { let s = &lex.slice(); s[2..s.len()-2].to_string() })]
-    EndOfLineCommentCrlf(String),
-    #[regex("//[^\n]*[^\r]\n", |lex| { let s = &lex.slice(); s[2..s.len() - 1].to_string() })]
+    #[regex("//[^\n]*\n", |lex| { let s = &lex.slice(); s[2..s.len() - 1].to_string() })]
     EndOfLineComment(String),
-    #[regex(r"/\*([^\*]*|\*[^/]*)\*/", |lex| { let s = &lex.slice(); s[2..s.len() - 2].to_string() })]
+    #[regex(r"/\*([^\*]|\*[^/])*\*/", |lex| { let s = &lex.slice(); s[2..s.len() - 2].to_string() })]
     EnclosedComment(String),
 
     #[regex(r"\[[^\]]+\]", |lex| { let s = &lex.slice(); s[1..s.len()-1].to_string() })]

@@ -17,7 +17,6 @@ extern {
         "tilde" => Token::TildeString(<String>),
         "dquote" => Token::DoubleQuoteString(<String>),
         "percent" => Token::PercentString(<String>),
-        "eol_cmtcrlf" => Token::EndOfLineCommentCrlf(<String>),
         "eol_cmt" => Token::EndOfLineComment(<String>),
         "encl_cmt" => Token::EnclosedComment(<String>),
         "soundref" => Token::SoundRef(<String>),
@@ -61,7 +60,6 @@ TraEntry: TraEntry = {
 };
 
 TraComment: TraComment = {
-    "eol_cmtcrlf" => TraComment::EndOfLine(<>),
     "eol_cmt" => TraComment::EndOfLine(<>),
     "encl_cmt" => TraComment::Enclosed(<>),
 };
